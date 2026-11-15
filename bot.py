@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Khai báo token chuẩn trên một dòng duy nhất (không bị ngắt dòng)
-BOT_TOKEN = "9140844364:AAERfon3eiMt75mOmizvvRxHcw50Liclr6Y"
+BOT_TOKEN = "9090276660:AAGtSJbUiFKjjCUyvdfw|CDbse6A7YqOnek"
 PORT = int(os.environ.get("PORT", 10000))
 
 # Khởi tạo Web Server Flask để mở cổng trên Render
