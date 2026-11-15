@@ -2,21 +2,16 @@ import os
 import logging
 from threading import Thread
 from flask import Flask
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+import telebot
 
-# Thiết lập ghi log hoạt động
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+# Thiết lập logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Lấy Token từ biến môi trường trên Render (an toàn, không lo lộ code)
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN_HERE")
 PORT = int(os.environ.get("PORT", 10000))
 
-# --- PHẦN 1: MỞ CỔNG PORT ĐỂ RENDER KHÔNG BÁO LỖI ---
+# Khởi tạo Web Server Flask để mở cổng trên Render
 app = Flask(__name__)
 
 @app.route('/')
@@ -26,66 +21,53 @@ def home():
 def run_web_server():
     app.run(host="0.0.0.0", port=PORT)
 
-# --- PHẦN 2: XỬ LÝ TIN NHẮN TELEGRAM BOT ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    await update.message.reply_text(
-        f"Xin chào {user.first_name}!\n"
-        "🤖 Bot hỗ trợ Locket Gold tự động đã sẵn sàng.\n\n"
-        "Vui lòng gửi **Username** hoặc **Link tài khoản Locket** của bạn:",
-        parse_mode="Markdown"
+# Khởi tạo Telegram Bot với telebot
+bot = telebot.TeleBot(BOT_TOKEN)
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(
+        message,
+        "Xin chào! 🤖 Bot hỗ trợ Locket Gold tự động đã sẵn sàng.\n\nVui lòng gửi Username hoặc Link tài khoản Locket của bạn:"
     )
 
-async def handle_locket_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_input = update.message.text.strip()
-    chat_id = update.message.chat_id
-
-    processing_msg = await update.message.reply_text(
-        f"⏳ Đang tiếp nhận yêu cầu cho: `{user_input}`...\nVui lòng chờ trong giây lát.",
-        parse_mode="Markdown"
-    )
-
+@bot.message_handler(func=lambda message: True)
+def handle_locket_request(message):
+    user_input = message.text.strip()
+    msg = bot.reply_to(message, f"⏳ Đang tiếp nhận yêu cầu cho: `{user_input}`...\nVui lòng chờ trong giây lát.", parse_mode="Markdown")
+    
     try:
-        # --- KHU VỰC TÍCH HỢP API / CODE XỬ LÝ LOCKET ---
-        # Sau này bạn sẽ gắn logic gọi API tự động tại đây
-        success = True 
+        # --- KHU VỰC XỬ LÝ LOGIC LOCKET ---
+        success = True # Giả lập xử lý thành công
         
         if success:
-            await context.bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=processing_msg.message_id,
-                text=f"✅ **Thành công!** Tài khoản `{user_input}` đã được xử lý.\n\n"
-                     "💡 *Lưu ý:* Khởi động lại ứng dụng Locket để cập nhật.",
+            bot.edit_message_text(
+                f"✅ **Thành công!** Tài khoản `{user_input}` đã được xử lý.\n\n💡 *Lưu ý:* Khởi động lại ứng dụng Locket để cập nhật.",
+                chat_id=message.chat.id,
+                message_id=msg.message_id,
                 parse_mode="Markdown"
             )
         else:
-            await context.bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=processing_msg.message_id,
-                text="❌ **Thất bại!** Không thể xử lý yêu cầu lúc này.",
+            bot.edit_message_text(
+                "❌ **Thất bại!** Không thể xử lý yêu cầu lúc này.",
+                chat_id=message.chat.id,
+                message_id=msg.message_id,
                 parse_mode="Markdown"
             )
     except Exception as e:
         logger.error(f"Lỗi: {e}")
-        await context.bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=processing_msg.message_id,
-            text="⚠️ Đã có lỗi hệ thống xảy ra."
-        )
+        bot.reply_to(message, "⚠️ Đã có lỗi hệ thống xảy ra.")
 
 def main():
-    # Chạy ngầm Web Server để mở cổng Port cho Render
+    # Chạy Flask ở luồng phụ
     web_thread = Thread(target=run_web_server)
     web_thread.daemon = True
     web_thread.start()
+    logger.info(f"🌐 Flask Web Server đã mở tại cổng: {PORT}")
 
-    # Khởi chạy Bot Telegram
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_locket_request))
-
-    logger.info("🤖 Bot đang chạy...")
-    application.run_polling()
+    # Chạy Bot Telegram ở luồng chính
+    logger.info("🤖 Bot đang chạy polling...")
+    bot.infinity_polling()
 
 if __name__ == '__main__':
     main()
