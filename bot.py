@@ -23,7 +23,7 @@ def run_web_server():
     app.run(host="0.0.0.0", port=PORT)
 
 # Khởi tạo Telegram Bot với telebot
-bot = telebot.TeleBot(9090276660:AAF3LIKHdruyTM8lla5LEueFFcpbkvBdx3A)
+bot = telebot.TeleBot(BOT_TOKEN)
 
 
 @bot.message_handler(commands=['start'])
