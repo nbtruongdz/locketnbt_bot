@@ -31,7 +31,6 @@ bot = telebot.TeleBot(BOT_TOKEN)
 def save_client_to_file(user_input, user_info):
     filename = "clients.txt"
     time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # Lấy thông tin chi tiết của khách hàng
     user_id = user_info.id
     username = f"@{user_info.username}" if user_info.username else "Không có username"
     full_name = f"{user_info.first_name or ''} {user_info.last_name or ''}".strip()
@@ -46,22 +45,18 @@ def save_client_to_file(user_input, user_info):
         logger.error(f"Lỗi ghi file: {e}")
 
 # Lệnh /start: Chào mừng khách hàng kèm ảnh giới thiệu
-@app.message_handler(commands=['start']) if hasattr(app, 'message_handler') else None # Cấu trúc chuẩn bên dưới:
-
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    # Link ảnh chào mừng (Bạn có thể thay thế bằng link ảnh Imgur của bạn)
     welcome_photo_url = "https://i.imgur.com/4AiX2q6.png" 
     
     caption_text = (
-        "Xin chào! 🤖 Chào mừng bạn đến με hệ thống hỗ trợ **Locket Gold** tự động.\n\n"
+        "Xin chào! 🤖 Chào mừng bạn đến với hệ thống hỗ trợ **Locket Gold** tự động.\n\n"
         "✨ Nâng cấp tài khoản mượt mà, nhanh chóng, uy tín.\n"
         "👇 Vui lòng gửi **Username** hoặc **Link tài khoản Locket** của bạn để bắt đầu:"
     )
     
-    # Tạo nút bấm tương tác (Inline Keyboard)
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📌 Hướng dẫn sử dụng", url="https://t.me/")) # Thay link nhóm/hướng dẫn của bạn vào đây
+    markup.add(InlineKeyboardButton("📌 Hướng dẫn sử dụng", url="https://t.me/"))
 
     try:
         bot.send_photo(
@@ -72,8 +67,8 @@ def send_welcome(message):
             reply_markup=markup
         )
     except Exception as e:
-        # Dự phòng nếu gửi ảnh lỗi thì gửi dạng tin nhắn văn bản
-        bot.reply_to(message, caption_text, parse_mode="Markdown")
+        logger.error(f"Lỗi gửi ảnh /start: {e}")
+        bot.send_message(message.chat.id, caption_text, parse_mode="Markdown")
 
 # Xử lý khi khách hàng gửi Username hoặc Link Locket
 @bot.message_handler(func=lambda message: True)
@@ -83,18 +78,17 @@ def handle_locket_request(message):
     # 1. Lưu lại thông tin khách hàng vào file clients.txt
     save_client_to_file(user_input, message.from_user)
     
-    # 2. Gửi tin nhắn đang chờ xử lý
-    msg = bot.reply_to(
-        message, 
+    # 2. Gửi tin nhắn đang chờ xử lý (dùng send_message thay vì reply_to để tránh lỗi mất message gốc)
+    msg = bot.send_message(
+        message.chat.id, 
         f"⏳ Đang tiếp nhận yêu cầu nâng cấp Locket Gold cho tài khoản: `{user_input}`...\nVui lòng chờ trong giây lát.", 
         parse_mode="Markdown"
     )
     
     try:
         # --- KHU VỰC XỬ LÝ LOGIC NÂNG CẤP LOCKET GOLD ---
-        success = True # Giả lập xử lý thành công (Bạn có thể nhúng code xử lý API của bạn vào đây)
+        success = True # Giả lập xử lý thành công
         
-        # Link ảnh thông báo kết quả thành công
         result_photo_url = "https://i.imgur.com/4AiX2q6.png" 
         success_caption = (
             f"✅ **Thành công!** Tài khoản `{user_input}` đã được kích hoạt **Locket Gold**.\n\n"
@@ -102,8 +96,10 @@ def handle_locket_request(message):
         )
         
         if success:
-            # Xóa tin nhắn chờ và gửi ảnh kết quả kèm thông báo thành công
-            bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
+            try:
+                bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
+            except Exception:
+                pass
             bot.send_photo(
                 chat_id=message.chat.id,
                 photo=result_photo_url,
@@ -119,16 +115,14 @@ def handle_locket_request(message):
             )
     except Exception as e:
         logger.error(f"Lỗi xử lý: {e}")
-        bot.reply_to(message, "⚠️ Đã có lỗi hệ thống xảy ra.")
+        bot.send_message(message.chat.id, "⚠️ Đã có lỗi hệ thống xảy ra.")
 
 def main():
-    # Chạy Flask ở luồng phụ để giữ cổng Render luôn mở
     web_thread = Thread(target=run_web_server)
     web_thread.daemon = True
     web_thread.start()
     logger.info(f"🌐 Flask Web Server đã mở tại cổng: {PORT}")
 
-    # Chạy Bot Telegram ở luồng chính (Polling liên tục)
     logger.info("🤖 Bot đang chạy polling...")
     bot.infinity_polling()
 
