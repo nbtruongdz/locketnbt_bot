@@ -8,8 +8,8 @@ import telebot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Khai báo token chuẩn trên một dòng duy nhất (không bị ngắt dòng)
-BOT_TOKEN = "9090276660:AAGtSJbUiFKjjCUyvdfw|CDbse6A7YqOnek"
+# Token chính xác lấy từ ảnh BotFather của bạn
+BOT_TOKEN = "9090276660:AAGtSJbUiFKjjCUyvdfwlCDbse6A7Yq0nek"
 PORT = int(os.environ.get("PORT", 10000))
 
 # Khởi tạo Web Server Flask để mở cổng trên Render
@@ -22,7 +22,7 @@ def home():
 def run_web_server():
     app.run(host="0.0.0.0", port=PORT)
 
-# Khởi tạo Telegram Bot một lần duy nhất với biến BOT_TOKEN
+# Khởi tạo Telegram Bot với biến BOT_TOKEN
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
