@@ -8,7 +8,7 @@ import telebot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN_HERE")
+BOT_TOKEN = "9090276660:AAF3LIKHdruyTM8lla5LEueFFcpbkvBdx3A"
 PORT = int(os.environ.get("PORT", 10000))
 
 # Khởi tạo Web Server Flask để mở cổng trên Render
