@@ -8,7 +8,8 @@ import telebot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bot = telebot.TeleBot("9090276660:AAF3LIKHdruyTM8lla5LEueFFcpbkvBdx3A")
+bot = telebot.TeleBot("9140844364: AAERfon3eiMt75mOmizvvRxH
+cw50Liclr6Y")
 
 PORT = int(os.environ.get("PORT", 10000))
 
